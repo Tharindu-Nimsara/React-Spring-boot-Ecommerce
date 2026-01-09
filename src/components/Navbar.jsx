@@ -1,11 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Search, Wrench } from 'lucide-react';
+import { ShoppingCart, User, Search, Wrench, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useState, useEffect, useRef } from 'react';
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,7 +64,7 @@ const Navbar = () => {
           </form>
 
           {/* Navigation Links */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-8">
             <Link
               to="/"
               className="text-gray-700 hover:text-accent transition-colors font-medium"
@@ -78,15 +78,17 @@ const Navbar = () => {
               Shop
             </Link>
 
-            {/* Cart Icon */}
-            <Link to="/cart" className="relative">
-              <ShoppingCart className="h-6 w-6 text-gray-700 hover:text-accent transition-colors" />
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
+            {/* Cart Icon - Hidden for admin users */}
+            {!isAdmin() && (
+              <Link to="/cart" className="relative">
+                <ShoppingCart className="h-6 w-6 text-gray-700 hover:text-accent transition-colors" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* User Dropdown */}
             <div className="relative" ref={dropdownRef}>
@@ -104,13 +106,25 @@ const Navbar = () => {
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                   {isAuthenticated() ? (
                     <>
-                      <Link
-                        to="/orders"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setShowDropdown(false)}
-                      >
-                        My Orders
-                      </Link>
+                      {isAdmin() && (
+                        <Link
+                          to="/admin"
+                          className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          <span>Dashboard</span>
+                        </Link>
+                      )}
+                      {!isAdmin() && (
+                        <Link
+                          to="/orders"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowDropdown(false)}
+                        >
+                          My Orders
+                        </Link>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

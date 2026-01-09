@@ -43,13 +43,13 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact</h3>
             <p className="text-gray-300 text-sm mb-2">Email: support@spareparts.com</p>
-            <p className="text-gray-300 text-sm">Phone: +1 (555) 123-4567</p>
+            <p className="text-gray-300 text-sm">Phone: +94 (721) 123-4567</p>
           </div>
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center">
           <p className="text-gray-400 text-sm">
-            © 2026 SpareParts Shop. University Project 2026 - Educational Purpose Only.
+            © 2026 SpareParts Shop. University Project 2026.
           </p>
         </div>
       </div>
