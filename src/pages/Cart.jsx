@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, ArrowRight, Loader2 } from 'lucide-react';
 import { checkoutAPI } from '../services/api';
 import { useCart } from '../contexts/CartContext';
+import { useToast } from '../contexts/ToastContext';
 import { getImageUrl, getPlaceholderImage } from '../utils/imageUrl';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, clearCart, loading } = useCart();
+  const { showToast } = useToast();
   const [checkingOut, setCheckingOut] = useState(false);
   const [localItems, setLocalItems] = useState([]);
 
@@ -23,19 +25,22 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     if (localItems.length === 0) {
-      alert('Your cart is empty');
+      showToast('Your cart is empty', 'error');
       return;
     }
 
     setCheckingOut(true);
     try {
       await checkoutAPI.checkout({});
-      alert('Order placed successfully!');
+      showToast('Order placed successfully!', 'success', 4000);
       clearCart();
-      navigate('/orders');
+      // Navigate after a short delay to let the toast be visible
+      setTimeout(() => {
+        navigate('/orders');
+      }, 500);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Failed to complete checkout. Please try again.');
+      showToast('Failed to complete checkout. Please try again.', 'error');
     } finally {
       setCheckingOut(false);
     }

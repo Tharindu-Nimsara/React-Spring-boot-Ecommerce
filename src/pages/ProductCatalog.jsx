@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { productsAPI } from '../services/api';
-import ProductCard from '../components/ProductCard';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { productsAPI } from "../services/api";
+import ProductCard from "../components/ProductCard";
+import { Loader2 } from "lucide-react";
 
 const ProductCatalog = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchParams] = useSearchParams();
-  const searchQuery = searchParams.get('search') || '';
-  const categoryFilter = searchParams.get('category') || '';
+  const searchQuery = searchParams.get("search") || "";
+  const categoryFilter = searchParams.get("category") || "";
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -20,8 +20,8 @@ const ProductCatalog = () => {
         setProducts(data);
         setError(null);
       } catch (err) {
-        setError('Failed to load products. Please try again later.');
-        console.error('Error fetching products:', err);
+        setError("Failed to load products. Please try again later.");
+        console.error("Error fetching products:", err);
       } finally {
         setLoading(false);
       }
@@ -30,8 +30,12 @@ const ProductCatalog = () => {
     fetchProducts();
   }, []);
 
-  // Filter products based on search and category
+  // Filter products based on search, category, and active status
   const filteredProducts = products.filter((product) => {
+    // Only show active products to users (active is a primitive boolean)
+    const isActive = product.active === true;
+    if (!isActive) return false;
+
     const matchesSearch = searchQuery
       ? product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.category?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -61,13 +65,16 @@ const ProductCatalog = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen bg-grey-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">Product Catalog</h1>
+          <h1 className="text-3xl font-bold text-primary mb-2">
+            Product Catalog
+          </h1>
           {(searchQuery || categoryFilter) && (
             <p className="text-gray-600">
-              {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+              {filteredProducts.length} product
+              {filteredProducts.length !== 1 ? "s" : ""} found
               {searchQuery && ` for "${searchQuery}"`}
               {categoryFilter && ` in category "${categoryFilter}"`}
             </p>
@@ -77,7 +84,9 @@ const ProductCatalog = () => {
         {filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600 text-lg">No products found.</p>
-            <p className="text-gray-500 mt-2">Try adjusting your search or filters.</p>
+            <p className="text-gray-500 mt-2">
+              Try adjusting your search or filters.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -92,4 +101,3 @@ const ProductCatalog = () => {
 };
 
 export default ProductCatalog;
-

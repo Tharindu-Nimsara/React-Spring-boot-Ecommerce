@@ -12,6 +12,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+// Note: Content-Type will be removed for FormData requests in the interceptor
 
 // Request interceptor to add JWT token
 api.interceptors.request.use(
@@ -19,6 +20,10 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Remove Content-Type header for FormData (axios will set it automatically with boundary)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
     }
     return config;
   },
@@ -137,15 +142,90 @@ export const adminAPI = {
     const response = await api.delete(`/api/products/${id}`);
     return response.data;
   },
+  activateProduct: async (id) => {
+    try {
+      // First get the product to preserve all its data
+      const productResponse = await api.get(`/api/products/${id}`);
+      const product = productResponse.data;
+      
+      // Update the product with active set to true
+      // Send all product fields to ensure nothing is lost
+      const updateData = {
+        name: product.name,
+        description: product.description || '',
+        price: parseFloat(product.price),
+        category: product.category,
+        stockQuantity: parseInt(product.stockQuantity) || 0,
+        imageUrl: product.imageUrl || null,
+        active: Boolean(true) // Explicitly ensure it's a boolean
+      };
+      
+      console.log('Activating product:', id, 'with data:', updateData);
+      const response = await api.put(`/api/products/${id}`, updateData);
+      console.log('Activation response:', response.data);
+      
+      // Verify the update was successful
+      if (response.data.active !== true) {
+        console.warn('Warning: Product activation may not have been saved. Backend returned active:', response.data.active);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error activating product:', error);
+      throw error;
+    }
+  },
+  deactivateProduct: async (id) => {
+    try {
+      // First get the product to preserve all its data
+      const productResponse = await api.get(`/api/products/${id}`);
+      const product = productResponse.data;
+      
+      // Update the product with active set to false
+      // Send all product fields to ensure nothing is lost
+      const updateData = {
+        name: product.name,
+        description: product.description || '',
+        price: parseFloat(product.price),
+        category: product.category,
+        stockQuantity: parseInt(product.stockQuantity) || 0,
+        imageUrl: product.imageUrl || null,
+        active: Boolean(false) // Explicitly ensure it's a boolean
+      };
+      
+      console.log('Deactivating product:', id, 'with data:', updateData);
+      const response = await api.put(`/api/products/${id}`, updateData);
+      console.log('Deactivation response:', response.data);
+      
+      // Verify the update was successful
+      if (response.data.active !== false) {
+        console.warn('Warning: Product deactivation may not have been saved. Backend returned active:', response.data.active);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error deactivating product:', error);
+      throw error;
+    }
+  },
   uploadProductImage: async (id, imageFile) => {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    const response = await api.post(`/api/products/${id}/upload-image`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    try {
+      const formData = new FormData();
+      // Backend expects parameter name "file" (matches @RequestParam("file"))
+      formData.append('file', imageFile);
+      // Don't set Content-Type header - axios will set it automatically with boundary
+      // The interceptor will remove the default Content-Type for FormData
+      const response = await api.post(`/api/products/${id}/upload-image`, formData);
+      return response.data;
+    } catch (error) {
+      console.error('Image upload error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
+      throw error;
+    }
   },
   // Order Management
   getAllOrders: async () => {

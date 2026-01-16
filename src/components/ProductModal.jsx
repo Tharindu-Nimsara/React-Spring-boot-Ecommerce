@@ -43,14 +43,31 @@ const ProductModal = ({ product, onClose, onSave }) => {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validImageTypes.includes(file.type)) {
+      showToast('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
+      e.target.value = ''; // Clear the input
+      return;
     }
+
+    // Validate file size (max 5MB)
+    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSizeInBytes) {
+      showToast('Image size must be less than 5MB', 'error');
+      e.target.value = ''; // Clear the input
+      return;
+    }
+
+    // File is valid, proceed with preview
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -231,6 +248,8 @@ const ProductModal = ({ product, onClose, onSave }) => {
               {product
                 ? 'Select a new image to replace the current one'
                 : 'Upload an image after creating the product'}
+              <br />
+              <span className="text-gray-400">Max file size: 5MB. Supported formats: JPEG, PNG, GIF, WebP</span>
             </p>
           </div>
 

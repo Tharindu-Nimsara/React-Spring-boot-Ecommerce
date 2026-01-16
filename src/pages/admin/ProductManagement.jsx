@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Edit, Trash2, PlusCircle, Loader2 } from 'lucide-react';
+import { Edit, PlusCircle, Loader2, Power, PowerOff } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import ProductModal from '../../components/ProductModal';
@@ -10,7 +10,7 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [activeTab, setActiveTab] = useState('active');
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -40,15 +40,25 @@ const ProductManagement = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteProduct = async (id) => {
+  const handleActivateProduct = async (id) => {
     try {
-      await adminAPI.deleteProduct(id);
-      showToast('Product deleted successfully', 'success');
+      await adminAPI.activateProduct(id);
+      showToast('Product activated successfully', 'success');
       fetchProducts();
-      setDeleteConfirm(null);
     } catch (error) {
-      console.error('Error deleting product:', error);
-      showToast('Failed to delete product', 'error');
+      console.error('Error activating product:', error);
+      showToast('Failed to activate product', 'error');
+    }
+  };
+
+  const handleDeactivateProduct = async (id) => {
+    try {
+      await adminAPI.deactivateProduct(id);
+      showToast('Product deactivated successfully', 'success');
+      fetchProducts();
+    } catch (error) {
+      console.error('Error deactivating product:', error);
+      showToast('Failed to deactivate product', 'error');
     }
   };
 
@@ -70,6 +80,14 @@ const ProductManagement = () => {
     );
   }
 
+  // Filter products based on active tab
+  const filteredProducts = products.filter((product) => {
+    // Handle boolean active field (primitive boolean from backend, defaults to true)
+    // If active is undefined/null, treat as active (default behavior)
+    const isActive = product.active !== false;
+    return activeTab === 'active' ? isActive : !isActive;
+  });
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -81,6 +99,32 @@ const ProductManagement = () => {
           <PlusCircle className="h-5 w-5" />
           <span>Add Product</span>
         </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6 border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'active'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Active Products
+          </button>
+          <button
+            onClick={() => setActiveTab('inactive')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'inactive'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Inactive Products
+          </button>
+        </nav>
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -109,14 +153,14 @@ const ProductManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {products.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    No products found
+                    No {activeTab === 'active' ? 'active' : 'inactive'} products found
                   </td>
                 </tr>
               ) : (
-                products.map((product) => {
+                filteredProducts.map((product) => {
                   const isLowStock = (product.stockQuantity || 0) < 5;
                   const imageUrl = getImageUrl(product.imageUrl) || getPlaceholderImage();
 
@@ -163,15 +207,27 @@ const ProductManagement = () => {
                           <button
                             onClick={() => handleEditProduct(product)}
                             className="text-blue-600 hover:text-blue-900"
+                            title="Edit Product"
                           >
                             <Edit className="h-5 w-5" />
                           </button>
-                          <button
-                            onClick={() => setDeleteConfirm(product.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
+                          {activeTab === 'active' ? (
+                            <button
+                              onClick={() => handleDeactivateProduct(product.id)}
+                              className="text-orange-600 hover:text-orange-900"
+                              title="Deactivate Product"
+                            >
+                              <PowerOff className="h-5 w-5" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleActivateProduct(product.id)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Activate Product"
+                            >
+                              <Power className="h-5 w-5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -182,34 +238,6 @@ const ProductManagement = () => {
           </table>
         </div>
       </div>
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Confirm Delete
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this product? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteProduct(deleteConfirm)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add/Edit Product Modal */}
       {isModalOpen && (

@@ -23,8 +23,14 @@ const ProductDetail = () => {
       try {
         setLoading(true);
         const data = await productsAPI.getById(id);
-        setProduct(data);
-        setError(null);
+        // Check if product is inactive (active is a primitive boolean)
+        if (data.active === false) {
+          setError('Product not available');
+          setProduct(null);
+        } else {
+          setProduct(data);
+          setError(null);
+        }
       } catch (err) {
         setError('Product not found');
         console.error('Error fetching product:', err);

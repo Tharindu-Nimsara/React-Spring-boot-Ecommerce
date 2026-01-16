@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, AlertTriangle, ShoppingBag } from 'lucide-react';
+import { Package, AlertTriangle, ShoppingBag, PowerOff } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import { Loader2 } from 'lucide-react';
 
@@ -8,6 +8,7 @@ const Dashboard = () => {
     totalProducts: 0,
     lowStockItems: 0,
     totalOrders: 0,
+    inactiveProducts: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -21,16 +22,38 @@ const Dashboard = () => {
         ]);
 
         const productsArray = Array.isArray(products) ? products : [];
-        const ordersArray = Array.isArray(orders) ? orders : [];
+        // Handle orders - could be array, object with orders property, or nested structure
+        let ordersArray = [];
+        if (Array.isArray(orders)) {
+          ordersArray = orders;
+        } else if (orders && typeof orders === 'object') {
+          // Check if orders is an object with an 'orders' property
+          if (Array.isArray(orders.orders)) {
+            ordersArray = orders.orders;
+          } else if (Array.isArray(orders.data)) {
+            ordersArray = orders.data;
+          } else {
+            // If it's an object but not an array, try to convert values to array
+            ordersArray = Object.values(orders).filter(item => item && typeof item === 'object');
+          }
+        }
+        
+        console.log('Orders data:', orders);
+        console.log('Orders array length:', ordersArray.length);
 
         const lowStock = productsArray.filter(
           (p) => (p.stockQuantity || 0) < 5
+        ).length;
+
+        const inactiveProducts = productsArray.filter(
+          (p) => p.active === false
         ).length;
 
         setStats({
           totalProducts: productsArray.length,
           lowStockItems: lowStock,
           totalOrders: ordersArray.length,
+          inactiveProducts: inactiveProducts,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -64,6 +87,12 @@ const Dashboard = () => {
       color: 'bg-red-500',
     },
     {
+      title: 'Inactive Products',
+      value: stats.inactiveProducts,
+      icon: PowerOff,
+      color: 'bg-orange-500',
+    },
+    {
       title: 'Total Orders',
       value: stats.totalOrders,
       icon: ShoppingBag,
@@ -75,7 +104,7 @@ const Dashboard = () => {
     <div>
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Dashboard Overview</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
